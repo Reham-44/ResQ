@@ -1,3 +1,6 @@
 <Solution>
   <Project Path="ResQ.API/ResQ.API.csproj" />
+  <Project Path="ResQ.Domain/ResQ.Domain.csproj" />
+  <Project Path="ResQ.Application/ResQ.Application.csproj" />
+  <Project Path="ResQ.Infrastructure/ResQ.Infrastructure.csproj" />
 </Solution>
