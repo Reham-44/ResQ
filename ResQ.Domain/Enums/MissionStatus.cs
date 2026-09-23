@@ -6,5 +6,6 @@ public enum MissionStatus
     EnRoute = 2,
     OnScene = 3,
     Completed = 4,
-    Aborted = 5
+    Aborted = 5,
+    Accepted = 6
 }

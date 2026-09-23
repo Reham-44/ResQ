@@ -10,7 +10,7 @@ public class Emergency
         new()
         {
             [EmergencyStatus.Created]    = [EmergencyStatus.Dispatched, EmergencyStatus.Cancelled, EmergencyStatus.Escalated],
-            [EmergencyStatus.Dispatched] = [EmergencyStatus.Accepted,   EmergencyStatus.Cancelled, EmergencyStatus.Escalated],
+            [EmergencyStatus.Dispatched] = [EmergencyStatus.Accepted, EmergencyStatus.OnTheWay, EmergencyStatus.Cancelled, EmergencyStatus.Escalated],
             [EmergencyStatus.Accepted]   = [EmergencyStatus.OnTheWay,   EmergencyStatus.Cancelled, EmergencyStatus.Escalated],
             [EmergencyStatus.OnTheWay]   = [EmergencyStatus.Arrived,    EmergencyStatus.Cancelled, EmergencyStatus.Escalated],
             [EmergencyStatus.Arrived]    = [EmergencyStatus.Resolved,   EmergencyStatus.Escalated],
@@ -19,6 +19,22 @@ public class Emergency
             [EmergencyStatus.Closed]     = [],
             [EmergencyStatus.Cancelled]  = [],
         };
+
+    private static readonly HashSet<EmergencyStatus> CancellableStatuses =
+        [
+            EmergencyStatus.Created,
+            EmergencyStatus.Dispatched,
+            EmergencyStatus.Accepted,
+            EmergencyStatus.OnTheWay,
+            EmergencyStatus.Escalated
+        ];
+
+    private static readonly HashSet<EmergencyStatus> ReassignableStatuses =
+        [
+            EmergencyStatus.Dispatched,
+            EmergencyStatus.Accepted,
+            EmergencyStatus.Escalated
+        ];
 
     public int Id { get; private set; }
     public string TrackingNumber { get; private set; } = string.Empty;
@@ -32,6 +48,9 @@ public class Emergency
     public DateTime CreatedAt { get; private set; }
     public DateTime ResponseDeadline { get; private set; }
     public DateTime? ResolvedAt { get; private set; }
+
+    // Optimistic concurrency token for emergency workflow updates.
+    public byte[] RowVersion { get; private set; } = [];
 
     // Navigation properties
     public EmergencyType EmergencyType { get; private set; } = null!;
@@ -69,8 +88,7 @@ public class Emergency
 
     public void TransitionTo(EmergencyStatus newStatus)
     {
-        if (Status == EmergencyStatus.Closed || Status == EmergencyStatus.Cancelled)
-            throw new DomainException($"Emergency in status '{Status}' cannot be modified.");
+        EnsureModifiable();
 
         if (!AllowedTransitions.TryGetValue(Status, out var allowed) || !allowed.Contains(newStatus))
             throw new InvalidStatusTransitionException(Status, newStatus);
@@ -79,6 +97,47 @@ public class Emergency
             ResolvedAt = DateTime.UtcNow;
 
         Status = newStatus;
+    }
+
+    public void Reassign()
+    {
+        EnsureModifiable();
+
+        if (!ReassignableStatuses.Contains(Status))
+            throw new DomainException($"Emergency in status '{Status}' cannot be reassigned. Reassignment is only allowed for Dispatched, Accepted, or Escalated emergencies.");
+
+        Status = EmergencyStatus.Dispatched;
+    }
+
+    public void AddHistory(EmergencyHistory history) => _history.Add(history);
+
+    public void Cancel()
+    {
+        EnsureModifiable();
+
+        if (!CancellableStatuses.Contains(Status))
+            throw new DomainException($"Emergency in status '{Status}' cannot be cancelled. Resolved, Arrived, and Closed emergencies cannot be cancelled.");
+
+        Status = EmergencyStatus.Cancelled;
+    }
+
+    public void Close()
+    {
+        if (Status != EmergencyStatus.Resolved)
+            throw new DomainException($"Emergency in status '{Status}' cannot be closed. Emergency must be in 'Resolved' status.");
+
+        Status = EmergencyStatus.Closed;
+    }
+
+    public void Resolve()
+    {
+        EnsureModifiable();
+
+        if (Status != EmergencyStatus.Arrived)
+            throw new DomainException($"Emergency in status '{Status}' cannot be resolved. Teams must have arrived on scene.");
+
+        ResolvedAt = DateTime.UtcNow;
+        Status = EmergencyStatus.Resolved;
     }
 
     public void UpdateLocation(double latitude, double longitude)
@@ -96,7 +155,7 @@ public class Emergency
 
     private void EnsureModifiable()
     {
-        if (Status == EmergencyStatus.Closed || Status == EmergencyStatus.Cancelled)
+        if (Status is EmergencyStatus.Resolved or EmergencyStatus.Closed or EmergencyStatus.Cancelled)
             throw new DomainException($"Emergency in status '{Status}' cannot be modified.");
     }
 

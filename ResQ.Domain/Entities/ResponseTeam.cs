@@ -1,4 +1,5 @@
 using ResQ.Domain.Enums;
+using ResQ.Domain.Exceptions;
 
 namespace ResQ.Domain.Entities;
 
@@ -29,6 +30,21 @@ public class ResponseTeam
         Status = TeamStatus.Available;
         Latitude = latitude;
         Longitude = longitude;
+    }
+
+    public void MarkBusy()
+    {
+        if (Status != TeamStatus.Available)
+            throw new DomainException($"Team '{Name}' cannot be assigned because its status is '{Status}'.");
+
+        Status = TeamStatus.Busy;
+    }
+
+    public void MarkAvailable()
+    {
+        if (Status == TeamStatus.Offline)
+            throw new DomainException($"Team '{Name}' is offline.");
+        Status = TeamStatus.Available;
     }
 
     public void UpdateStatus(TeamStatus newStatus) => Status = newStatus;
