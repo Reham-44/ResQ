@@ -11,6 +11,8 @@ public class EmergencyConfiguration : IEntityTypeConfiguration<Emergency>
     {
         builder.HasKey(e => e.Id);
 
+        builder.Property(e => e.RowVersion).IsRowVersion();
+
         builder.Property(e => e.TrackingNumber)
             .IsRequired()
             .HasMaxLength(30);

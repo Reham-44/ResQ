@@ -17,6 +17,8 @@ public class EmergencyTypeConfiguration : IEntityTypeConfiguration<EmergencyType
         builder.Property(e => e.Description)
             .HasMaxLength(500);
 
+        builder.Property(e => e.RequiredTeamType).HasConversion<string>().HasMaxLength(20);
+
         builder.HasIndex(e => e.Name).IsUnique();
     }
 }

@@ -21,17 +21,30 @@ public class Mission
 
     private Mission() { }
 
-    public Mission(int emergencyId, int responseTeamId)
+    public Mission(int emergencyId, int responseTeamId, string? notes = null)
     {
         EmergencyId = emergencyId;
         ResponseTeamId = responseTeamId;
         Status = MissionStatus.Assigned;
         AssignedAt = DateTime.UtcNow;
+        Notes = notes;
+    }
+
+    public void Accept()
+    {
+        EnsureActive();
+        if (Status != MissionStatus.Assigned)
+            throw new DomainException($"Cannot accept mission in status '{Status}'. Mission must be 'Assigned'.");
+
+        Status = MissionStatus.Accepted;
     }
 
     public void MarkEnRoute()
     {
         EnsureActive();
+        if (Status != MissionStatus.Accepted && Status != MissionStatus.Assigned)
+            throw new DomainException($"Cannot start mission in status '{Status}'. Mission must be 'Accepted' or 'Assigned'.");
+
         Status = MissionStatus.EnRoute;
         EnRouteAt = DateTime.UtcNow;
     }
@@ -39,6 +52,9 @@ public class Mission
     public void MarkOnScene()
     {
         EnsureActive();
+        if (Status != MissionStatus.EnRoute)
+            throw new DomainException($"Cannot mark on scene from status '{Status}'. Mission must be 'EnRoute'.");
+
         Status = MissionStatus.OnScene;
         OnSceneAt = DateTime.UtcNow;
     }
@@ -46,9 +62,13 @@ public class Mission
     public void Complete(string? notes = null)
     {
         EnsureActive();
+        if (Status != MissionStatus.OnScene)
+            throw new DomainException($"Cannot complete mission from status '{Status}'. Mission must be 'OnScene'.");
+
         Status = MissionStatus.Completed;
         CompletedAt = DateTime.UtcNow;
-        Notes = notes;
+        if (!string.IsNullOrWhiteSpace(notes))
+            Notes = notes;
     }
 
     public void Abort(string? notes = null)
@@ -58,7 +78,8 @@ public class Mission
 
         Status = MissionStatus.Aborted;
         CompletedAt = DateTime.UtcNow;
-        Notes = notes;
+        if (!string.IsNullOrWhiteSpace(notes))
+            Notes = notes;
     }
 
     private void EnsureActive()

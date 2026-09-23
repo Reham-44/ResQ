@@ -11,5 +11,10 @@ public class ApplicationUserConfiguration : IEntityTypeConfiguration<Application
         builder.Property(u => u.FullName)
             .IsRequired()
             .HasMaxLength(200);
+
+        builder.Property(u => u.ResponseTeamId)
+            .IsRequired(false);
+
+        builder.HasIndex(u => u.ResponseTeamId);
     }
 }
