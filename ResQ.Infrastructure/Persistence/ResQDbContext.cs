@@ -1,9 +1,13 @@
+using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
 using ResQ.Domain.Entities;
+using ResQ.Infrastructure.Identity;
+
+using ResQ.Application.Common.Interfaces;
 
 namespace ResQ.Infrastructure.Persistence;
 
-public class ResQDbContext : DbContext
+public class ResQDbContext : IdentityDbContext<ApplicationUser>, IApplicationDbContext
 {
     public ResQDbContext(DbContextOptions<ResQDbContext> options) : base(options) { }
 
