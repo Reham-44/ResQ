@@ -1,5 +1,6 @@
 using MediatR;
 using ResQ.Application.Common.Interfaces;
+using ResQ.Application.Features.Emergencies;
 using ResQ.Domain.Entities;
 using ResQ.Domain.Enums;
 
@@ -16,16 +17,7 @@ public class CreateEmergencyCommandHandler : IRequestHandler<CreateEmergencyComm
 
     public async Task<CreateEmergencyResponseDto> Handle(CreateEmergencyCommand request, CancellationToken cancellationToken)
     {
-        var deadlineMinutes = request.Priority switch
-        {
-            EmergencyPriority.Low => 120,
-            EmergencyPriority.Medium => 60,
-            EmergencyPriority.High => 30,
-            EmergencyPriority.Critical => 10,
-            _ => 60
-        };
-
-        var responseDeadline = DateTime.UtcNow.AddMinutes(deadlineMinutes);
+        var responseDeadline = EmergencySlaPolicy.CalculateDeadline(request.Priority, DateTime.UtcNow);
 
         var emergency = new Emergency(
             citizenId: request.CitizenId,

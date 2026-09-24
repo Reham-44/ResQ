@@ -1,10 +1,13 @@
 using System.Text;
+using Hangfire;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi;
 using ResQ.Application.Extensions;
 using ResQ.Infrastructure.Extensions;
 using ResQ.Infrastructure.Persistence;
+using ResQ.API.BackgroundJobs;
+using ResQ.Application.Features.Emergencies.Commands.MonitorOverdueEmergencies;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -14,6 +17,14 @@ builder.Services.AddControllers();
 // Clean Architecture services
 builder.Services.AddApplication();
 builder.Services.AddInfrastructure(builder.Configuration);
+
+builder.Services.AddHangfire(configuration => configuration
+    .SetDataCompatibilityLevel(CompatibilityLevel.Version_180)
+    .UseSimpleAssemblyNameTypeSerializer()
+    .UseRecommendedSerializerSettings()
+    .UseSqlServerStorage(builder.Configuration.GetConnectionString("DefaultConnection")
+        ?? throw new InvalidOperationException("ConnectionStrings:DefaultConnection is required.")));
+builder.Services.AddHangfireServer();
 
 // JWT Authentication
 var jwtSettings = builder.Configuration.GetSection("JwtSettings");
@@ -67,6 +78,18 @@ builder.Services.AddSwaggerGen(c =>
 });
 
 var app = builder.Build();
+
+app.UseHangfireDashboard();
+using (var scope = app.Services.CreateScope())
+{
+    var recurringJobManager = scope.ServiceProvider
+        .GetRequiredService<IRecurringJobManager>();
+
+    recurringJobManager.AddOrUpdate<SlaMonitoringJob>(
+        "sla-escalation-monitor",
+        job => job.RunAsync(),
+        Cron.Minutely);
+}
 
 // Seed roles
 using (var scope = app.Services.CreateScope())
