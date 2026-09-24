@@ -10,11 +10,14 @@ using ResQ.Infrastructure.Persistence;
 using ResQ.API.BackgroundJobs;
 using ResQ.Application.Features.Emergencies.Commands.MonitorOverdueEmergencies;
 using ResQ.API.Security;
+using ResQ.API.ExceptionHandling;
 
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services
 builder.Services.AddControllers();
+builder.Services.AddProblemDetails();
+builder.Services.AddExceptionHandler<ApiExceptionHandler>();
 
 // Clean Architecture services
 builder.Services.AddApplication();
@@ -99,6 +102,8 @@ using (var scope = app.Services.CreateScope())
 }
 
 // HTTP request pipeline
+app.UseExceptionHandler();
+
 if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
