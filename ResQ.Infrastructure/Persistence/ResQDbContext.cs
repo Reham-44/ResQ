@@ -18,6 +18,9 @@ public class ResQDbContext : IdentityDbContext<ApplicationUser>, IApplicationDbC
     public DbSet<EmergencyHistory> EmergencyHistories => Set<EmergencyHistory>();
     public DbSet<Notification> Notifications => Set<Notification>();
 
+    public void MarkEmergencyForConcurrencyUpdate(Emergency emergency) =>
+        Entry(emergency).Property(e => e.Status).IsModified = true;
+
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         base.OnModelCreating(modelBuilder);

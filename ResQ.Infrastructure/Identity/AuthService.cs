@@ -27,6 +27,10 @@ public class AuthService : IAuthService
 
     public async Task<RegisterResponseDto> RegisterAsync(RegisterCommand command, CancellationToken cancellationToken = default)
     {
+        const string publicRegistrationRole = "Citizen";
+        if (!string.Equals(command.Role, publicRegistrationRole, StringComparison.Ordinal))
+            throw new InvalidOperationException("Public registration is restricted to the Citizen role.");
+
         var existingUser = await _userManager.FindByEmailAsync(command.Email);
         if (existingUser != null)
         {
@@ -47,18 +51,18 @@ public class AuthService : IAuthService
             throw new InvalidOperationException($"User registration failed: {errors}");
         }
 
-        var roleResult = await _userManager.AddToRoleAsync(user, command.Role);
+        var roleResult = await _userManager.AddToRoleAsync(user, publicRegistrationRole);
         if (!roleResult.Succeeded)
         {
             var errors = string.Join("; ", roleResult.Errors.Select(e => e.Description));
-            throw new InvalidOperationException($"Failed to assign role '{command.Role}': {errors}");
+            throw new InvalidOperationException($"Failed to assign role '{publicRegistrationRole}': {errors}");
         }
 
         return new RegisterResponseDto(
             user.Id,
             user.Email ?? string.Empty,
             user.FullName,
-            command.Role);
+            publicRegistrationRole);
     }
 
     public async Task<LoginResponseDto> LoginAsync(LoginCommand command, CancellationToken cancellationToken = default)

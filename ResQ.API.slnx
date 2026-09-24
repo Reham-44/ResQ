@@ -3,4 +3,5 @@
   <Project Path="ResQ.Domain/ResQ.Domain.csproj" />
   <Project Path="ResQ.Application/ResQ.Application.csproj" />
   <Project Path="ResQ.Infrastructure/ResQ.Infrastructure.csproj" />
+  <Project Path="ResQ.Tests/ResQ.Tests.csproj" />
 </Solution>

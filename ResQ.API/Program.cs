@@ -1,5 +1,6 @@
 using System.Text;
 using Hangfire;
+using Hangfire.Dashboard;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi;
@@ -8,6 +9,7 @@ using ResQ.Infrastructure.Extensions;
 using ResQ.Infrastructure.Persistence;
 using ResQ.API.BackgroundJobs;
 using ResQ.Application.Features.Emergencies.Commands.MonitorOverdueEmergencies;
+using ResQ.API.Security;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -79,7 +81,6 @@ builder.Services.AddSwaggerGen(c =>
 
 var app = builder.Build();
 
-app.UseHangfireDashboard();
 using (var scope = app.Services.CreateScope())
 {
     var recurringJobManager = scope.ServiceProvider
@@ -107,6 +108,10 @@ if (app.Environment.IsDevelopment())
 app.UseHttpsRedirection();
 app.UseAuthentication();
 app.UseAuthorization();
+app.UseHangfireDashboard("/hangfire", new DashboardOptions
+{
+    Authorization = [new AdminDashboardAuthorizationFilter()]
+});
 app.MapControllers();
 
 app.Run();

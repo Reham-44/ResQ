@@ -4,8 +4,6 @@ namespace ResQ.Application.Features.Auth.Commands.Register;
 
 public class RegisterCommandValidator : AbstractValidator<RegisterCommand>
 {
-    private static readonly string[] AllowedRoles = ["Citizen", "ResponseTeamMember", "Dispatcher", "Admin"];
-
     public RegisterCommandValidator()
     {
         RuleFor(x => x.Email)
@@ -24,7 +22,7 @@ public class RegisterCommandValidator : AbstractValidator<RegisterCommand>
 
         RuleFor(x => x.Role)
             .NotEmpty()
-            .Must(r => AllowedRoles.Contains(r))
-            .WithMessage($"Role must be one of: {string.Join(", ", AllowedRoles)}.");
+            .Must(r => string.Equals(r, "Citizen", StringComparison.Ordinal))
+            .WithMessage("Public registration is restricted to the Citizen role.");
     }
 }

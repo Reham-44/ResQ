@@ -25,6 +25,16 @@ public sealed class DispatchQueryHandler(IApplicationDbContext db) :
         return await db.ResponseTeams.AsNoTracking().Where(t => t.TeamType == type && t.Status == TeamStatus.Available && !db.Missions.Any(m => m.ResponseTeamId == t.Id && Active.Contains(m.Status)))
             .OrderBy(t => t.Name).Select(t => new TeamDto(t.Id, t.Name, t.TeamType.ToString(), t.Status.ToString())).ToListAsync(ct);
     }
-    public async Task<IReadOnlyList<HistoryDto>> Handle(GetMissionHistoryQuery r, CancellationToken ct) => await db.EmergencyHistories.AsNoTracking().Where(h => h.EmergencyId == r.EmergencyId).OrderByDescending(h => h.CreatedAt).Select(h => new HistoryDto(h.Action, h.PerformedBy, h.OldStatus.HasValue ? h.OldStatus.ToString() : null, h.NewStatus.HasValue ? h.NewStatus.ToString() : null, h.CreatedAt, h.Notes)).ToListAsync(ct);
+    public async Task<IReadOnlyList<HistoryDto>> Handle(GetMissionHistoryQuery r, CancellationToken ct)
+    {
+        if (!await db.Emergencies.AnyAsync(e => e.Id == r.EmergencyId, ct))
+            throw new KeyNotFoundException("Emergency not found.");
+
+        return await db.EmergencyHistories.AsNoTracking()
+            .Where(h => h.EmergencyId == r.EmergencyId)
+            .OrderByDescending(h => h.CreatedAt)
+            .Select(h => new HistoryDto(h.Action, h.PerformedBy, h.OldStatus.HasValue ? h.OldStatus.ToString() : null, h.NewStatus.HasValue ? h.NewStatus.ToString() : null, h.CreatedAt, h.Notes))
+            .ToListAsync(ct);
+    }
     public async Task<IReadOnlyList<MissionDto>> Handle(GetMissionsQuery r, CancellationToken ct) => await db.Missions.AsNoTracking().Where(m => r.TeamId == null || m.ResponseTeamId == r.TeamId).OrderByDescending(m => m.AssignedAt).Select(m => new MissionDto(m.Id, m.EmergencyId, m.ResponseTeamId, m.ResponseTeam.Name, m.Status.ToString(), m.AssignedAt, m.Notes)).ToListAsync(ct);
 }

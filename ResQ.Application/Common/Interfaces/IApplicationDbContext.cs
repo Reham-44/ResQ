@@ -12,5 +12,6 @@ public interface IApplicationDbContext
     DbSet<EmergencyHistory> EmergencyHistories { get; }
     DbSet<Notification> Notifications { get; }
 
+    void MarkEmergencyForConcurrencyUpdate(Emergency emergency);
     Task<int> SaveChangesAsync(CancellationToken cancellationToken = default);
 }
