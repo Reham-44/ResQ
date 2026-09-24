@@ -39,6 +39,14 @@ public class Mission
         Status = MissionStatus.Accepted;
     }
 
+    public void Reject(string? notes = null)
+    {
+        if (Status != MissionStatus.Assigned)
+            throw new DomainException($"Cannot reject mission in status '{Status}'. Mission must be 'Assigned'.");
+
+        Abort(notes);
+    }
+
     public void MarkEnRoute()
     {
         EnsureActive();

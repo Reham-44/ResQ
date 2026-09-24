@@ -61,7 +61,14 @@ public sealed class MissionWorkflowHandler(IApplicationDbContext db) : IRequestH
             if (r.Action is MissionAction.Resolve or MissionAction.Close or MissionAction.Cancel)
             {
                 if (r.IsTeamMember && (mission == null || r.ActorTeamId != mission.ResponseTeamId)) throw new UnauthorizedAccessException("You are not assigned to this mission.");
-                if (r.Action == MissionAction.Resolve) { emergency.Resolve(); mission?.Complete(r.Notes); }
+                if (r.Action == MissionAction.Resolve)
+                {
+                    if (mission is null)
+                        throw new KeyNotFoundException("Active mission not found for this emergency.");
+
+                    emergency.Resolve();
+                    mission.Complete(r.Notes);
+                }
                 else if (r.Action == MissionAction.Close) emergency.Close();
                 else { emergency.Cancel(); mission?.Abort(r.Notes); }
                 if (mission != null)
@@ -72,13 +79,13 @@ public sealed class MissionWorkflowHandler(IApplicationDbContext db) : IRequestH
             }
             else
             {
-                if (mission == null) throw new DomainException("Emergency has no active mission.");
+                if (mission == null) throw new KeyNotFoundException("Active mission not found for this emergency.");
                 if (r.ActorTeamId != mission.ResponseTeamId) throw new UnauthorizedAccessException("You are not assigned to this mission.");
                 switch (r.Action)
                 {
                     case MissionAction.Accept: mission.Accept(); emergency.TransitionTo(EmergencyStatus.Accepted); break;
                     case MissionAction.Reject:
-                        mission.Abort(r.Notes);
+                        mission.Reject(r.Notes);
                         emergency.Cancel();
                         var rejectedTeam = await db.ResponseTeams.FirstAsync(t => t.Id == mission.ResponseTeamId, ct);
                         if (!await db.Missions.AnyAsync(m => m.Id != mission.Id && m.ResponseTeamId == rejectedTeam.Id && ActiveStatuses.Contains(m.Status), ct)) rejectedTeam.MarkAvailable();
