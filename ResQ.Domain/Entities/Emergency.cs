@@ -164,7 +164,6 @@ public class Emergency
     private static string GenerateTrackingNumber()
     {
         var timestamp = DateTime.UtcNow.ToString("yyyyMMddHHmm");
-        var random = Random.Shared.Next(1000, 9999);
-        return $"RSQ-{timestamp}-{random}";
+        return $"RSQ-{timestamp}-{Guid.NewGuid():N}";
     }
 }

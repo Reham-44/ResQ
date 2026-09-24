@@ -22,6 +22,20 @@ public sealed class DomainWorkflowTests
         Assert.Equal(EmergencyStatus.Closed, emergency.Status);
     }
 
+    [Fact]
+    public void Emergency_tracking_numbers_keep_prefix_and_timestamp_with_unique_guid_suffix()
+    {
+        var emergencies = Enumerable.Range(0, 1_000).Select(_ => NewEmergency()).ToArray();
+        var trackingNumbers = emergencies.Select(emergency => emergency.TrackingNumber).ToArray();
+
+        Assert.All(trackingNumbers, trackingNumber =>
+        {
+            Assert.StartsWith("RSQ-", trackingNumber);
+            Assert.Matches(@"^RSQ-\d{12}-[0-9a-f]{32}$", trackingNumber);
+        });
+        Assert.Equal(trackingNumbers.Length, trackingNumbers.Distinct().Count());
+    }
+
     [Theory]
     [InlineData(EmergencyStatus.Resolved)]
     [InlineData(EmergencyStatus.Closed)]

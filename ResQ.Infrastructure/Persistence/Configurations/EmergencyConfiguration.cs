@@ -15,7 +15,7 @@ public class EmergencyConfiguration : IEntityTypeConfiguration<Emergency>
 
         builder.Property(e => e.TrackingNumber)
             .IsRequired()
-            .HasMaxLength(30);
+            .HasMaxLength(50);
 
         builder.HasIndex(e => e.TrackingNumber).IsUnique();
 
