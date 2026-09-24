@@ -1,4 +1,3 @@
-using System.Text;
 using Hangfire;
 using Hangfire.Dashboard;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
@@ -33,7 +32,7 @@ builder.Services.AddHangfireServer();
 
 // JWT Authentication
 var jwtSettings = builder.Configuration.GetSection("JwtSettings");
-var secretKey = jwtSettings["SecretKey"] ?? throw new InvalidOperationException("JwtSettings:SecretKey is required.");
+var secretKeyBytes = JwtSigningKeyValidator.GetRequiredKeyBytes(builder.Configuration);
 
 builder.Services.AddAuthentication(options =>
 {
@@ -50,7 +49,7 @@ builder.Services.AddAuthentication(options =>
         ValidateIssuerSigningKey = true,
         ValidIssuer = jwtSettings["Issuer"],
         ValidAudience = jwtSettings["Audience"],
-        IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(secretKey)),
+        IssuerSigningKey = new SymmetricSecurityKey(secretKeyBytes),
         ClockSkew = TimeSpan.Zero
     };
 });
