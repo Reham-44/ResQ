@@ -44,7 +44,11 @@ public sealed class DispatchController(ISender sender, UserManager<ApplicationUs
     [HttpGet("emergencies/{id:int}/available-teams"), Authorize(Roles = "Dispatcher,Admin")]
     public async Task<IActionResult> AvailableTeams(int id, CancellationToken ct) => Ok(await sender.Send(new GetAvailableTeamsQuery(id), ct));
     [HttpGet("emergencies/{id:int}/history"), Authorize(Roles = "Dispatcher,Admin")]
-    public async Task<IActionResult> History(int id, CancellationToken ct) => Ok(await sender.Send(new GetMissionHistoryQuery(id), ct));
+    public async Task<IActionResult> History(int id, CancellationToken ct)
+    {
+        try { return Ok(await sender.Send(new GetMissionHistoryQuery(id), ct)); }
+        catch (KeyNotFoundException ex) { return NotFound(new { message = ex.Message }); }
+    }
     [HttpGet("missions"), Authorize(Roles = "Dispatcher,Admin,ResponseTeamMember")]
     public async Task<IActionResult> Missions(CancellationToken ct)
     {
@@ -64,7 +68,7 @@ public sealed class DispatchController(ISender sender, UserManager<ApplicationUs
         }
         catch (DbUpdateConcurrencyException) { return Conflict(new { message = "The team or emergency was changed by another request. Refresh and retry." }); }
         catch (KeyNotFoundException ex) { return NotFound(new { message = ex.Message }); }
-        catch (UnauthorizedAccessException ex) { return Forbid(); }
+        catch (UnauthorizedAccessException) { return Forbid(); }
         catch (ResQ.Domain.Exceptions.DomainException ex) { return Conflict(new { message = ex.Message }); }
     }
 

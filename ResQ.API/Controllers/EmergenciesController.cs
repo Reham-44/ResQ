@@ -28,7 +28,6 @@ public class EmergenciesController : ControllerBase
     public async Task<ActionResult<CreateEmergencyResponseDto>> Create([FromBody] CreateEmergencyCommand command)
     {
         var citizenId = User.FindFirstValue(ClaimTypes.NameIdentifier)
-                     ?? User.FindFirstValue(ClaimTypes.Name)
                      ?? User.FindFirstValue("sub");
 
         if (string.IsNullOrEmpty(citizenId))
@@ -44,8 +43,10 @@ public class EmergenciesController : ControllerBase
     public async Task<ActionResult<EmergencyDetailDto>> GetById(int id)
     {
         var userId = User.FindFirstValue(ClaimTypes.NameIdentifier)
-                  ?? User.FindFirstValue("sub")
-                  ?? string.Empty;
+                  ?? User.FindFirstValue("sub");
+
+        if (string.IsNullOrEmpty(userId))
+            return Unauthorized();
 
         var isStaff = User.IsInRole("Dispatcher") || User.IsInRole("Admin");
 
@@ -63,8 +64,10 @@ public class EmergenciesController : ControllerBase
         [FromQuery] int pageSize = 10)
     {
         var citizenId = User.FindFirstValue(ClaimTypes.NameIdentifier)
-                     ?? User.FindFirstValue("sub")
-                     ?? string.Empty;
+                     ?? User.FindFirstValue("sub");
+
+        if (string.IsNullOrEmpty(citizenId))
+            return Unauthorized();
 
         var result = await _sender.Send(new GetMyEmergenciesQuery(citizenId, pageNumber, pageSize));
         return Ok(result);

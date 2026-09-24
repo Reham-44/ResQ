@@ -55,6 +55,9 @@ public sealed class MissionWorkflowHandler(IApplicationDbContext db) : IRequestH
             else emergency.TransitionTo(EmergencyStatus.Dispatched);
             team.MarkBusy();
             db.Missions.Add(new Mission(emergency.Id, team.Id, r.Notes));
+            // Ensure the emergency rowversion advances even when a reassignment leaves
+            // its status as Dispatched, so concurrent assignments serialize on this row.
+            db.MarkEmergencyForConcurrencyUpdate(emergency);
         }
         else
         {

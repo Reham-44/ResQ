@@ -24,6 +24,10 @@ public class AuthController : ControllerBase
             var result = await _sender.Send(command);
             return Ok(result);
         }
+        catch (FluentValidation.ValidationException ex)
+        {
+            return BadRequest(new { errors = ex.Errors.Select(error => error.ErrorMessage).Distinct().ToArray() });
+        }
         catch (InvalidOperationException ex)
         {
             return BadRequest(new { message = ex.Message });
