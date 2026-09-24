@@ -22,11 +22,12 @@ public class ValidationBehavior<TRequest, TResponse> : IPipelineBehavior<TReques
             return await next(cancellationToken);
 
         var context = new ValidationContext<TRequest>(request);
-        var failures = _validators
-            .Select(v => v.Validate(context))
-            .SelectMany(r => r.Errors)
-            .Where(f => f is not null)
-            .ToList();
+        var failures = new List<FluentValidation.Results.ValidationFailure>();
+        foreach (var validator in _validators)
+        {
+            var result = await validator.ValidateAsync(context, cancellationToken);
+            failures.AddRange(result.Errors.Where(failure => failure is not null));
+        }
 
         if (failures.Count > 0)
             throw new ValidationException(failures);

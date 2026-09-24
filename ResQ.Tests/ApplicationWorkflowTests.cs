@@ -21,17 +21,46 @@ public sealed class ApplicationWorkflowTests
     public async Task Create_emergency_sets_deadline_and_persists()
     {
         await using var db = TestDatabase.Create();
-        var handler = new CreateEmergencyCommandHandler(db);
+        db.EmergencyTypes.Add(new EmergencyType("Medical incident", TeamType.Medical));
+        await db.SaveChangesAsync();
+        var services = new ServiceCollection();
+        services.AddLogging();
+        services.AddApplication();
+        services.AddSingleton<IApplicationDbContext>(db);
+        using var provider = services.BuildServiceProvider();
+        var sender = provider.GetRequiredService<ISender>();
         var before = DateTime.UtcNow;
-        var result = await handler.Handle(new CreateEmergencyCommand
+        var result = await sender.Send(new CreateEmergencyCommand
         {
             CitizenId = "citizen-1", EmergencyTypeId = 1, Latitude = 30, Longitude = 31,
             Priority = EmergencyPriority.High
-        }, CancellationToken.None);
+        });
         var emergency = await db.Emergencies.SingleAsync();
 
         Assert.Equal(result.Id, emergency.Id);
         Assert.InRange(emergency.ResponseDeadline, before.AddMinutes(30), DateTime.UtcNow.AddMinutes(30));
+    }
+
+    [Fact]
+    public async Task Create_emergency_rejects_nonexistent_emergency_type_during_validation()
+    {
+        await using var db = TestDatabase.Create();
+        var services = new ServiceCollection();
+        services.AddLogging();
+        services.AddApplication();
+        services.AddSingleton<IApplicationDbContext>(db);
+        using var provider = services.BuildServiceProvider();
+        var sender = provider.GetRequiredService<ISender>();
+
+        var exception = await Assert.ThrowsAsync<FluentValidation.ValidationException>(() => sender.Send(new CreateEmergencyCommand
+        {
+            CitizenId = "citizen-1", EmergencyTypeId = 404, Latitude = 30, Longitude = 31,
+            Priority = EmergencyPriority.High
+        }));
+
+        Assert.Contains(exception.Errors, error => error.PropertyName == "EmergencyTypeId" &&
+            error.ErrorMessage.Contains("existing emergency type", StringComparison.OrdinalIgnoreCase));
+        Assert.Empty(await db.Emergencies.ToListAsync());
     }
 
     [Fact]
