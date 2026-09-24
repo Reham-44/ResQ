@@ -109,6 +109,8 @@ public class Emergency
         Status = EmergencyStatus.Dispatched;
     }
 
+    public void Escalate() => TransitionTo(EmergencyStatus.Escalated);
+
     public void AddHistory(EmergencyHistory history) => _history.Add(history);
 
     public void Cancel()
