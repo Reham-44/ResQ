@@ -10,6 +10,7 @@ using ResQ.API.BackgroundJobs;
 using ResQ.Application.Features.Emergencies.Commands.MonitorOverdueEmergencies;
 using ResQ.API.Security;
 using ResQ.API.ExceptionHandling;
+using System.Reflection;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -61,6 +62,14 @@ builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen(c =>
 {
     c.SwaggerDoc("v1", new OpenApiInfo { Title = "ResQ.API", Version = "v1" });
+
+    var xmlFile = $"{Assembly.GetExecutingAssembly().GetName().Name}.xml";
+    var xmlPath = Path.Combine(AppContext.BaseDirectory, xmlFile);
+    c.IncludeXmlComments(xmlPath, includeControllerXmlComments: true);
+
+    var applicationXmlFile = $"{typeof(ResQ.Application.Features.Auth.Commands.Register.RegisterCommand).Assembly.GetName().Name}.xml";
+    var applicationXmlPath = Path.Combine(AppContext.BaseDirectory, applicationXmlFile);
+    c.IncludeXmlComments(applicationXmlPath);
 
     c.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
     {

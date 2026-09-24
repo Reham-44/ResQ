@@ -8,8 +8,31 @@ namespace ResQ.Application.Features.Dispatch.Queries;
 public sealed record GetAvailableTeamsQuery(int EmergencyId) : IRequest<IReadOnlyList<TeamDto>>;
 public sealed record GetMissionHistoryQuery(int EmergencyId) : IRequest<IReadOnlyList<HistoryDto>>;
 public sealed record GetMissionsQuery(int? TeamId) : IRequest<IReadOnlyList<MissionDto>>;
+
+/// <summary>Eligible response team returned for dispatch.</summary>
+/// <param name="Id">Team identifier.</param>
+/// <param name="Name">Team name.</param>
+/// <param name="Type">Team specialization.</param>
+/// <param name="Status">Current team status.</param>
 public sealed record TeamDto(int Id, string Name, string Type, string Status);
+
+/// <summary>Recorded emergency workflow or escalation action.</summary>
+/// <param name="Action">Action name.</param>
+/// <param name="PerformedBy">User identifier or system actor that performed the action.</param>
+/// <param name="OldStatus">Emergency status before the action, when recorded.</param>
+/// <param name="NewStatus">Emergency status after the action, when recorded.</param>
+/// <param name="CreatedAt">History entry time in UTC.</param>
+/// <param name="Notes">Optional action notes.</param>
 public sealed record HistoryDto(string Action, string PerformedBy, string? OldStatus, string? NewStatus, DateTime CreatedAt, string? Notes);
+
+/// <summary>Mission summary returned by dispatch queries.</summary>
+/// <param name="Id">Mission identifier.</param>
+/// <param name="EmergencyId">Associated emergency identifier.</param>
+/// <param name="TeamId">Assigned response team identifier.</param>
+/// <param name="TeamName">Assigned response team name.</param>
+/// <param name="Status">Current mission status.</param>
+/// <param name="AssignedAt">Assignment time in UTC.</param>
+/// <param name="Notes">Optional mission notes.</param>
 public sealed record MissionDto(int Id, int EmergencyId, int TeamId, string TeamName, string Status, DateTime AssignedAt, string? Notes);
 
 public sealed class DispatchQueryHandler(IApplicationDbContext db) :
