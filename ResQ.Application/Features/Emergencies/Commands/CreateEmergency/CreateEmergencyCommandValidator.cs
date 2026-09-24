@@ -1,13 +1,19 @@
 using FluentValidation;
+using Microsoft.EntityFrameworkCore;
+using ResQ.Application.Common.Interfaces;
 
 namespace ResQ.Application.Features.Emergencies.Commands.CreateEmergency;
 
 public class CreateEmergencyCommandValidator : AbstractValidator<CreateEmergencyCommand>
 {
-    public CreateEmergencyCommandValidator()
+    public CreateEmergencyCommandValidator(IApplicationDbContext context)
     {
         RuleFor(x => x.EmergencyTypeId)
-            .GreaterThan(0).WithMessage("A valid EmergencyTypeId is required.");
+            .Cascade(CascadeMode.Stop)
+            .GreaterThan(0).WithMessage("A valid EmergencyTypeId is required.")
+            .MustAsync((id, cancellationToken) => context.EmergencyTypes
+                .AnyAsync(emergencyType => emergencyType.Id == id, cancellationToken))
+            .WithMessage("EmergencyTypeId must refer to an existing emergency type.");
 
         RuleFor(x => x.Latitude)
             .InclusiveBetween(-90.0, 90.0).WithMessage("Latitude must be between -90 and 90.");
